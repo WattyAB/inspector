@@ -67,7 +67,8 @@ setup(
     version=VERSION,
     description='Explore and mark [time]series data',
     url='https://github.com/WattyAB/inspector',
-    license='Proprietary',
+    author='Watty AB',
+    license='Apache License 2.0',
     packages=[
         'inspector'
     ],
