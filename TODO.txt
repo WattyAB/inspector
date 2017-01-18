@@ -1,0 +1,3 @@
+* Add python3 support
+* Add Qt5 support
+* Add matplotlib 2.x support
