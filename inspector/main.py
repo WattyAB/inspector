@@ -55,9 +55,10 @@ class Inspector(object):
         :param call_exec: bool
             Block by calling app.exec_() and exit on close.
             Use call_exec=False if running interactively from python prompt.
-        :param files: [str]
-            List of files to load
-
+        :param loglevel: loglevel the app will log at
+        :param interactive: bool
+            If not run in an interactive prompt, set this to False. Used for
+            configuring inputhook under ipython.
         """
         global QtGui
         logging.basicConfig(

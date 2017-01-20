@@ -9,14 +9,13 @@ import argparse
 
 import numpy as np
 import pandas as pd
-import msgpack
-import lz4
 import gzip
 
 from time import time
 from datetime import datetime
 from operator import itemgetter, methodcaller
 from numbers import Number
+from functools import partial
 
 from PyQt4 import QtCore
 from PyQt4 import QtGui
@@ -34,7 +33,6 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.backend_bases import key_press_handler
-from functools import partial
 
 from spanviews import DetailView, OutlineView
 from plugins import discover_plugins, all_plugins
@@ -51,6 +49,13 @@ from constants import (
 
 
 def msgpack_lz4_to_series(data):
+    try:
+        import msgpack
+        import lz4
+    except ImportError:
+        logging.info('To load lz4-msgpacked data, '
+                     'install packages "python-msgpack" and "lz4"')
+        raise
     content = msgpack.loads(lz4.decompress(data))
     series_load = lambda d: pd.Series(
         data=d['values'],

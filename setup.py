@@ -2,7 +2,7 @@ from __future__ import division, print_function
 
 from setuptools import setup
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 import importlib
 
@@ -65,9 +65,10 @@ class PreDevelopHook(develop):
 setup(
     name="inspector",
     version=VERSION,
-    description='Explore and mark [time]series data',
+    description='Tool for easy plotting of 1-dimensional data, '
+                'built on PyQt and matplotlib',
     url='https://github.com/WattyAB/inspector',
-    author='Watty AB',
+    author='Lennart Liberg, Watty AB',
     license='Apache License 2.0',
     packages=[
         'inspector'
@@ -76,15 +77,16 @@ setup(
         'pandas>=0.17.0',
         'numpy>=1.9.0',
         'matplotlib>=1.4.2,<2.0.0',
-        'msgpack-python>=0.4.7',
-        'numpy>=1.9.0',
-        'lz4>=0.8.2',
+        'mock',
     ],
     extras_require={
         'test': [
             'nose',
-            'mock',
         ],
+        'unpackers': [  # subject to change / move. Listed here in mean time.
+            'lz4',
+            'msgpack-python'
+        ]
     },
     cmdclass={
         'install': PreInstallHook,

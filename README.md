@@ -14,6 +14,6 @@ Requires pyqt4, which is easiest installed by e.g. `apt-get install python-qt4`
 # On command line (using the generator plugin)
 $ inspector --RandomGenerator generate '{"days": 2}'
 ```
-![GUI sample image](/inspector_sample.png)
+![GUI sample image](/gui_sample.png)
 
 Copyright Watty AB 
