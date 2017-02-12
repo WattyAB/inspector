@@ -11,10 +11,10 @@ from matplotlib.widgets import SpanSelector
 from matplotlib.dates import date2num, num2date, DateLocator
 from matplotlib.patches import Polygon
 
-from PyQt4.QtCore import pyqtSignal, Qt, QTimer, QObject, QSize
-from PyQt4.QtGui import QColor
+from inspector.helpers import pyqtSignal
+from matplotlib.backends.qt_compat import QtWidgets, QtCore
 
-from constants import (
+from inspector.constants import (
     SPAN_ALPHA,
     COLORS,
     DATA_ALPHA,
@@ -37,7 +37,7 @@ class CompatibleSpanSelector(SpanSelector):
             return SpanSelector.ignore(self, event)
 
 
-class SpanView(QObject):
+class SpanView(QtCore.QObject):
     """
     Baseclass for matplotlib axes supporting dragging of spans
     (outline-view and detail-view)
@@ -236,7 +236,7 @@ class OutlineView(SpanView):
             )
         )
         idx = self.items.index(item)
-        rgb_tuple = QColor(COLORS[min(idx, len(COLORS))]).getRgbF()[:3]
+        rgb_tuple = QtWidgets.QColor(COLORS[min(idx, len(COLORS))]).getRgbF()[:3]
         series.plot(
             ax=self.axes,
             label=item.name,
@@ -308,7 +308,7 @@ class DetailView(SpanView):
         data_slice = item.series.loc[start:end]
         if data_slice.empty:
             data_slice = item.series.iloc[0:10]
-        rgb_tuple = QColor(COLORS[min(idx, len(COLORS))]).getRgbF()[:3]
+        rgb_tuple = QtWidgets.QColor(COLORS[min(idx, len(COLORS))]).getRgbF()[:3]
         data_slice.plot(
             ax=self.axes,
             label=item.name,

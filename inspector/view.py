@@ -1,14 +1,11 @@
 from __future__ import print_function, division
 
+# stdlib imports
 import os
-import cPickle
-import pickle
+import pickle  # Could use cPickle if python2 
 import logging
 import json
 import argparse
-
-import numpy as np
-import pandas as pd
 import gzip
 
 from time import time
@@ -17,27 +14,35 @@ from operator import itemgetter, methodcaller
 from numbers import Number
 from functools import partial
 
-from PyQt4 import QtCore
-from PyQt4 import QtGui
-from PyQt4.QtCore import pyqtSignal, Qt, QTimer, QSize
-from PyQt4.QtGui import (
-    QAction, QLabel, QMainWindow,
-    QIcon, qApp, QGridLayout, QListView, QStandardItem,
-    QStandardItemModel, QColor, QAbstractItemView, QWidget,
-    QKeySequence, QSplitter, QHBoxLayout, QFrame, QTableView,
-    QVBoxLayout, QSpacerItem
-)
+# 3rd-party imports
+import numpy as np
+import pandas as pd
 
+# Matplotlib and Qt imports
 import matplotlib as mpl
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.backend_bases import key_press_handler
 
-from spanviews import DetailView, OutlineView
-from plugins import discover_plugins, all_plugins
-from helpers import print_out, create_action, debug_decorator
-from constants import (
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui, is_pyqt5
+
+if is_pyqt5():
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
+                                                            as FigureCanvas
+    from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT \
+                                                            as NavigationToolbar
+else:
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg \
+                                                            as FigureCanvas
+    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT \
+                                                            as NavigationToolbar
+
+from inspector.helpers import pyqtSignal, Qt
+
+# Project imports
+from inspector.spanviews import DetailView, OutlineView
+from inspector.plugins import discover_plugins, all_plugins
+from inspector.helpers import print_out, create_action, debug_decorator
+from inspector.constants import (
     SPAN_ALPHA,
     LABEL_COLOR_MAP,
     BACKGROUND_COLOR,
@@ -71,7 +76,7 @@ def msgpack_lz4_to_series(data):
 logger = logging.getLogger('view')
 
 
-class View(QMainWindow):
+class View(QtWidgets.QMainWindow):
     """The main widget where all graphical elements are set up, signals
     are connected to slots, plugins loaded, etc.
 
@@ -115,18 +120,18 @@ class View(QMainWindow):
 
         self.avail_signals = {}
         # Populate initially with signals from model
-        for k, v in self.model.signals.iteritems():
+        for k, v in self.model.signals.items():
             self.avail_signals[k] = v
 
-        self.draw_timer = QTimer()
+        self.draw_timer = QtCore.QTimer()
         self.init_ui()
         self.canvas_redraw()
 
         if not interactive:
-            QTimer.singleShot(0, self.parse_sysargs)
+            QtCore.QTimer.singleShot(0, self.parse_sysargs)
         if data is not None:
             logger.debug('Scheduling load-data callback')
-            QTimer.singleShot(0, lambda: self.load_seria(data))
+            QtCore.QTimer.singleShot(0, lambda: self.load_seria(data))
 
 #         option_list
 #         statusbox
@@ -135,12 +140,12 @@ class View(QMainWindow):
     def parse_sysargs(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('files', nargs='*')
-        for plugin_name, _ in all_plugins().iteritems():
+        for plugin_name, _ in all_plugins().items():
             parser.add_argument('--%s' %plugin_name, required=False, nargs='*')
         args = parser.parse_args()
         if args.files:
             self.load_files(args.files)
-        for plugin_name, _ in all_plugins().iteritems():
+        for plugin_name, _ in all_plugins().items():
             subargs = getattr(args, plugin_name.replace('-','_'))
             if subargs is None or not isinstance(subargs, list):
                 continue
@@ -173,7 +178,7 @@ class View(QMainWindow):
                 )
 
     def init_ui(self):
-        self.win = QWidget()
+        self.win = QtWidgets.QWidget()
         self.win.setObjectName('window_widget')
         self.win.setStyleSheet("background-color:{};".format(BACKGROUND_COLOR))
         self.setGeometry(300, 300, 1224, 720)
@@ -198,32 +203,35 @@ class View(QMainWindow):
         # Compose layout
         #
         # Left side
-        self.frame_left = QFrame()
+        self.frame_left = QtWidgets.QFrame()
         self.frame_left.setObjectName('frame_left')
-        self.grid_left = QGridLayout()
+        self.grid_left = QtWidgets.QGridLayout()
         self.grid_left.setSpacing(20)
         self.frame_left.setLayout(self.grid_left)
         self.grid_left.addWidget(self.marking_label, 0, 0, 2, 1)
-        self.grid_left.addItem(QSpacerItem(1,1), 2, 0, 1, 1)
-        self.help_item_model = QStandardItemModel()
+        self.grid_left.addItem(
+            QtWidgets.QSpacerItem(1,1),
+            2, 0, 1, 1
+        )
+        self.help_item_model = QtGui.QStandardItemModel()
 #         self.help_list = QListView()
-        class CustListView(QListView):
+        class CustListView(QtWidgets.QListView):
             def sizeHint(self, *args, **kwargs):
-                return QSize(100, 400)
+                return QtCore.QSize(100, 400)
         self.help_list = CustListView()
         self.help_list.setSizePolicy(
-            QtGui.QSizePolicy.Preferred,
-            QtGui.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Preferred,
         )
         self.help_list.setModel(self.help_item_model)
         self.grid_left.addWidget(self.help_list, 2, 0, 1, 1)
         self.grid_left.addWidget(self.list_view, 4, 0, 4, 1)
 
         # Right side
-        self.frame_right = QFrame()
+        self.frame_right = QtWidgets.QFrame()
         self.frame_right.setObjectName('frame_right')
-        self.frame_right.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.vbox_right = QVBoxLayout()
+        self.frame_right.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.vbox_right = QtWidgets.QVBoxLayout()
         self.frame_right.setLayout(self.vbox_right)
         map(
             self.vbox_right.addWidget,
@@ -231,12 +239,12 @@ class View(QMainWindow):
         )
 
         # Vertical splitter
-        self.vsplit = QSplitter(self.win)
+        self.vsplit = QtWidgets.QSplitter(self.win)
         self.vsplit.addWidget(self.frame_left)
         self.vsplit.addWidget(self.frame_right)
         self.vsplit.setStretchFactor(1, 2)
 
-        self.hbox = QHBoxLayout()
+        self.hbox = QtWidgets.QHBoxLayout()
         self.hbox.addWidget(self.vsplit)
         self.win.setLayout(self.hbox)
 
@@ -270,7 +278,7 @@ class View(QMainWindow):
     def setup_plugin_menus(self):
         self.plugin_menus = {}
         discover_plugins()
-        for name, class_ in all_plugins().iteritems():
+        for name, class_ in all_plugins().items():
             menu = self.menuBar().addMenu(name)
             self.actions['toggle_plugin_' + name] = create_action(
                 text='Enabled'.format(name),
@@ -289,23 +297,23 @@ class View(QMainWindow):
                     menu.title().replace('&',''),
                     act.text().replace('&',''),
                 )
-                self.help_item_model.appendRow(QStandardItem(text))
+                self.help_item_model.appendRow(QtGui.QStandardItem(text))
         map(
             populate_from_menu,
             [self.file_menu, self.view_menu, self.label_menu]
         )
 
     def setup_marking_label(self):
-        marking_label = QLabel('Current label-mode: ?')
+        marking_label = QtWidgets.QLabel('Current label-mode: ?')
         marking_label.setAlignment(Qt.AlignCenter)
         marking_label.setSizePolicy(
-            QtGui.QSizePolicy.Preferred,
-            QtGui.QSizePolicy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.MinimumExpanding,
         )
         return marking_label
 
     def set_marking_label(self, label):
-        color = QColor(LABEL_COLOR_MAP.get(label, 'white'))
+        color = QtWidgets.QColor(LABEL_COLOR_MAP.get(label, 'white'))
         color.setAlphaF(SPAN_ALPHA)
         self.marking_label.setStyleSheet(
             "background-color: rgba{};".format(tuple(color.getRgb()))
@@ -332,7 +340,7 @@ class View(QMainWindow):
 
         # Have to be careful so that the lambda get redefined each loop:
         # http://martinfitzpatrick.name/article/transmit-extra-data-with-signals-in-pyqt/
-        for key, label in key_label_mapping.iteritems():
+        for key, label in key_label_mapping.items():
             self.actions['label_'+label] = create_action(
                 '&'+label,
                 parent=self,
@@ -347,8 +355,8 @@ class View(QMainWindow):
             parent=self,
             tip='Exit application',
             shortcut='Ctrl+Q',
-            icon=QIcon('exit.png'),
-            connect=qApp.quit,
+            icon=QtGui.QIcon('exit.png'),
+            connect=QtWidgets.qApp.quit,
             add_to=self.file_menu
         )
         self.actions['remove_interval_markings'] = create_action(
@@ -475,7 +483,7 @@ class View(QMainWindow):
                 self.detail_view.update_span_color,
             ]
         }
-        for source, target in sources_to_targets.iteritems():
+        for source, target in sources_to_targets.items():
             targets = target if isinstance(target, list) \
                              else [target]
             for target_i in targets:
@@ -491,8 +499,8 @@ class View(QMainWindow):
         list_view = SeriesListView()
         list_view.setModel(item_model)
         list_view.setSizePolicy(
-            QtGui.QSizePolicy.Preferred,
-            QtGui.QSizePolicy.Expanding
+            QtWidgets.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Expanding
         )
         list_view.setEditTriggers(list_view.NoEditTriggers)
         return list_view
@@ -502,8 +510,8 @@ class View(QMainWindow):
         fig = Figure((8.0, 6.0), dpi=90, facecolor=FIG_FACECOLOR)
         canvas = FigureCanvas(fig)
         canvas.setSizePolicy(
-            QtGui.QSizePolicy.Expanding,
-            QtGui.QSizePolicy.Expanding
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding
         )
         canvas.setFocusPolicy( Qt.ClickFocus )
         canvas.setFocus() # put last?
@@ -581,7 +589,7 @@ class View(QMainWindow):
 
             # Connect any plugin slots to known signals by name.
             # Currently assumes they can be found in the self.model object.
-            for sig, slot in instance.slot_bindings.iteritems():
+            for sig, slot in instance.slot_bindings.items():
                 if os.environ.get('PYDEBUG', None):
                     slot = debug_decorator(slot, slot.__name__)
                 self.avail_signals[sig].connect(slot)
@@ -592,7 +600,7 @@ class View(QMainWindow):
                 # Also, enablement of plugins would be order-dependant.
 
             # Connect any plugin signals with known slots by name
-            for sig_name, sig in instance.signals.iteritems():
+            for sig_name, sig in instance.signals.items():
                 for slot in self.avail_slots_by_signal.get(sig_name, []):
                     if os.environ.get('PYDEBUG', None):
                         slot = debug_decorator(slot, slot.__name__)
@@ -639,7 +647,7 @@ class View(QMainWindow):
                     metadata=series_container.get('metadata', None)
                 )
             else:
-                for name, subcontainer in series_container.iteritems():
+                for name, subcontainer in series_container.items():
                     self.load_seria(subcontainer, name)
 
         # tuple or list (call recursively)
@@ -676,7 +684,6 @@ class View(QMainWindow):
         load_methods = [
              msgpack_lz4_to_series,
              pd.read_msgpack,
-             cPickle.loads,
              pickle.loads,
         ]
         seria = None
@@ -785,7 +792,7 @@ class View(QMainWindow):
         key_press_handler(event, self.canvas, self.mpl_toolbar)
 
 
-class SeriesListView(QTableView):
+class SeriesListView(QtWidgets.QTableView):
     """
     ListView widget configured for accepting drag-n-dropped files
     """
@@ -794,10 +801,10 @@ class SeriesListView(QTableView):
         super(SeriesListView, self).__init__(None)
         self.setAcceptDrops(True)
         self.setSizePolicy(
-            QtGui.QSizePolicy.Preferred,
-            QtGui.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Preferred,
         )
-        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.horizontalHeader().setStretchLastSection(True)
         self.horizontalHeader().hide()
 

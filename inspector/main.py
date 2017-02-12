@@ -11,15 +11,13 @@ import pandas as pd
 
 from datetime import datetime
 
-from PyQt4 import QtGui
-from PyQt4.QtGui import QApplication
-
-from model import Model
-from view import View
+from inspector.model import Model
+from inspector.view import View
 
 # import sip
 # sip.setapi('QVariant', 2)
 
+from matplotlib.backends.qt_compat import QtWidgets, QtGui
 
 
 # ==============================================================================
@@ -72,8 +70,8 @@ class Inspector(object):
             if shell and not shell._inputhook.__module__.endswith('.qt'):
                 shell.enable_gui('qt')
                 logger.info("Enabled 'qt' gui in current ipython shell")
-        app = QApplication.instance()
-        self.app = app or QApplication(sys.argv)
+        app = QtWidgets.QApplication.instance()
+        self.app = app or QtWidgets.QApplication(sys.argv)
         QtGui.qApp = self.app
 
         self.model = Model()
@@ -105,7 +103,7 @@ def example_series(datetimeindex=True):
 
 def quicktest():
     inspector = Inspector()
-    for name, series in example_series(datetimeindex=False).iteritems():
+    for name, series in example_series(datetimeindex=False).items():
         inspector.load_series(series, name)
     return inspector
 

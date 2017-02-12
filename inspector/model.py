@@ -12,10 +12,10 @@ from pandas.tseries.frequencies import to_offset
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
 
-from PyQt4.QtCore import pyqtSignal, Qt, QObject, pyqtBoundSignal
-from PyQt4.QtGui import QStandardItemModel, QStandardItem, QColor, QBrush
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui
 
-from constants import (
+from inspector.helpers import pyqtSignal, Qt
+from inspector.constants import (
     COLORS,
     DATA_ALPHA,
     LABEL_COLOR_MAP,
@@ -26,7 +26,7 @@ from constants import (
 XAXIS_TIME = 'time'
 XAXIS_NUMBER = 'number'
 
-class Model(QObject):
+class Model(QtCore.QObject):
     """
     Contains state of current loaded items (data), and exposes methods (slots)
     and signals for manipulating the items.
@@ -46,14 +46,14 @@ class Model(QObject):
         signals = {}
         for attrname in dir(self):
             if (attrname.startswith('sig_') and
-                    isinstance(getattr(self, attrname), pyqtBoundSignal)):
+                   isinstance(getattr(self, attrname), QtCore.pyqtBoundSignal)):
                 signals[attrname] = getattr(self, attrname)
         return signals
 
     def __init__(self):
         super(Model, self).__init__()
         self.items = []
-        self.item_model = QStandardItemModel(self)
+        self.item_model = QtGui.QStandardItemModel(self)
         self.current_label = None
         self.xaxis_unit = None # Default value, will be set upon first data
         self.total_items_ever_added = 0
@@ -109,7 +109,7 @@ class Model(QObject):
             return
 
 #       NOTE: Item color examples: http://ynonperek.com/q.t-mvc-customize-items
-        item_color = QColor(COLORS[row_idx])
+        item_color = QtWidgets.QColor(COLORS[row_idx])
         item_color.setAlphaF(DATA_ALPHA)
 
         item = DataItem(series, name, metadata=metadata)
@@ -119,9 +119,9 @@ class Model(QObject):
         self.items.append(item)
         self.total_items_ever_added += 1
 
-        colorpatch_item = QStandardItem('')
+        colorpatch_item = QtGui.QStandardItem('')
         colorpatch_item.setData(
-            QBrush(item_color),
+            QtWidgets.QBrush(item_color),
             Qt.BackgroundColorRole
         )
 
@@ -296,7 +296,7 @@ class Model(QObject):
                     self.remove_marking(item, mark)
 
 
-class DataItem(QStandardItem):
+class DataItem(QtGui.QStandardItem):
     """
     Class containing the data plotted, together with markings made on that
     data and metadata

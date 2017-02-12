@@ -2,23 +2,30 @@ from __future__ import print_function, division
 
 import sys
 
+from functools import wraps
+from unittest import TestCase
+from operator import attrgetter
+
 import numpy as np
 import pandas as pd
 
 # skeleton from http://johnnado.com/pyqt-qtest-example/
-from unittest import TestCase
-from PyQt4.QtGui import QApplication, QAbstractItemView
-from PyQt4.QtTest import QTest
-from PyQt4.QtCore import Qt
-from PyQt4 import QtCore
-from functools import wraps
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, is_pyqt5
+
+if is_pyqt5():
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtCore import Qt
+else:
+    from PyQt4.QtTest import QTest
+    from PyQt4.QtCore import Qt
+
 
 from inspector import Inspector
 from inspector.constants import Labels
 from inspector import plugins
-from operator import attrgetter
 
-app = QApplication([])
+
+app = QtWidgets.QApplication([])
 
 failure_ = False
 sys._excepthook = sys.excepthook
@@ -158,7 +165,7 @@ class TestInspector(TestCase):
     def test_remove_selected_list_items(self):
         self.ins.load_series(self.df_timeseries)
         self.ins.view.list_view.setSelectionMode(
-            QAbstractItemView.MultiSelection  # Required for selection in test
+            QtWidgets.QAbstractItemView.MultiSelection  # Required for selection in test
         )
         self.ins.view.list_view.selectRow(0)
         self.ins.view.list_view.selectRow(1)

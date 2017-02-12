@@ -1,1 +1,1 @@
-from main import Inspector
+from inspector.main import Inspector

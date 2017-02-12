@@ -4,9 +4,14 @@ import os
 import logging
 from functools import wraps
 
-from PyQt4.QtGui import QKeySequence, QAction
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui, is_pyqt5
+if is_pyqt5():
+    from PyQt5.QtCore import pyqtSignal, Qt
+else:
+    from PyQt4.QtCore import pyqtSignal, Qt
 
 import cProfile
+
 
 def profileit(name):
     def inner(func):
@@ -36,11 +41,11 @@ def debug_decorator(fcn, msg):
 def create_action(text, parent, tip=None, shortcut=None, icon=None,
                   connect=None, connect_bool=None, add_to=None,
                   checkable=False):
-    action = QAction(text, parent, checkable=checkable)
+    action = QtWidgets.QAction(text, parent, checkable=checkable)
     if icon:
         action.setIcon(icon)
     if shortcut:
-        action.setShortcut(QKeySequence(shortcut))
+        action.setShortcut(QtGui.QKeySequence(shortcut))
     if tip:
         action.setStatusTip(tip)
     if add_to:
@@ -61,7 +66,10 @@ def create_action(text, parent, tip=None, shortcut=None, icon=None,
             slots = [debug_decorator(cb, 'Triggered: ' + text) for cb in slots]
         # Slots must/should take no arguments
         for slot in slots:
-            action.triggered[()].connect(slot)
+            if is_pyqt5():
+                action.triggered.connect(slot)
+            else:
+                action.triggered[()].connect(slot)
 
 
     return action
