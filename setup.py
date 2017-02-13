@@ -2,7 +2,7 @@ from __future__ import division, print_function
 
 from setuptools import setup
 
-VERSION = '0.1.1'
+VERSION = '0.2.0'
 
 import importlib
 
@@ -41,10 +41,23 @@ pre_dependencies = [
         'advice': "Try e.g. 'apt-get install python-qt4'",
     },
     {
+        'module': 'PyQt5',
+        # If PyQt4 is importable, we don't raise
+        'only_if': lambda: raises_importerror('PyQt4'),
+        'advice': "Try e.g. 'pip3 install pyqt5'",
+    },
+    {
         'module': 'matplotlib.backends.backend_qt4agg',
-        'only_if': lambda: raises_importerror('matplotlib'),
+        'only_if': lambda: raises_importerror('matplotlib') \
+                and raises_importerror('matplotlib.backends.backend_qt4agg'),
         'advice': 'Try reinstalling matplotlib',
-    }
+    },
+    {
+        'module': 'matplotlib.backends.backend_qt5agg',
+        'only_if': lambda: raises_importerror('matplotlib') \
+                and raises_importerror('matplotlib.backends.backend_qt4agg'),
+        'advice': 'Try reinstalling matplotlib',
+    },
 ]
 
 from setuptools.command.install import install
@@ -76,7 +89,7 @@ setup(
     install_requires=[
         'pandas>=0.17.0',
         'numpy>=1.9.0',
-        'matplotlib>=1.4.2,<2.0.0',
+        'matplotlib>=1.4.2',
         'mock',
     ],
     extras_require={

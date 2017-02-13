@@ -1,4 +1,4 @@
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 import os
 import logging
@@ -13,11 +13,9 @@ from pandas.tseries.frequencies import to_offset
 from inspector.constants import CLEANED, LABEL_COLOR_MAP, Labels
 from inspector.helpers import print_out, create_action
 
-from PyQt4.QtCore import QObject, pyqtSignal, QDateTime, QTime, Qt
-from PyQt4.QtGui import (
-    QVBoxLayout, QDateTimeEdit, QDialog, QLabel,
-    QLineEdit, QDialogButtonBox, QCompleter
-)
+from matplotlib.backends.qt_compat import QtWidgets, QtCore
+
+from inspector.helpers import pyqtSignal, Qt
 
 from pkg_resources import iter_entry_points
 
@@ -93,13 +91,13 @@ def extract_integers(s):
     :return: list[int]
     """
     non_digits_replaced = [c if c.isdigit() else ' ' for c in s]
-    return map(
+    return list(map(
         int,
         ''.join(non_digits_replaced).split()
-    )
+    ))
 
 
-class PluginBase(QObject):
+class PluginBase(QtCore.QObject):
     """Baseclass for all plugins"""
 
     @property
@@ -180,10 +178,10 @@ class RandomDataGenerator(PluginBase):
             )
 
 
-class SimpleDialog(QDialog):
+class SimpleDialog(QtWidgets.QDialog):
     def __init__(self, field_specs):
         super(SimpleDialog, self).__init__()
-        self.layout = QVBoxLayout(self)
+        self.layout = QtWidgets.QVBoxLayout(self)
         self.field_specs = field_specs
         self.fields = {}
         for spec in field_specs:
@@ -195,8 +193,8 @@ class SimpleDialog(QDialog):
                 raise ValueError('unrecognized spec: %s' % spec)
 
         # OK and Cancel buttons
-        self.buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+        self.buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel,
             Qt.Horizontal,
             self
         )
@@ -205,31 +203,39 @@ class SimpleDialog(QDialog):
         self.buttons.rejected.connect(self.reject)
 
     def add_QLineEdit(self, spec):
-        widget = QLineEdit()
+        widget = QtWidgets.QLineEdit()
         self.fields[spec['name']] = widget
         label_text = spec.get('label', spec['name'])
-        self.layout.addWidget(QLabel(label_text))
+        self.layout.addWidget(
+            QtWidgets.QLabel(label_text)
+        )
         self.layout.addWidget(widget)
         if 'default' in spec:
             widget.setText(spec['default'])
         if 'autocomplete-list' in spec:
             widget.setCompleter(
-                QCompleter(spec['autocomplete-list'])
+                QtWidgets.QCompleter(spec['autocomplete-list'])
             )
 
     def add_QDateTimeEdit(self, spec):
-        widget = QDateTimeEdit(
+        widget = QtWidgets.QDateTimeEdit(
             spec.get('default', datetime.utcnow())
         )
         self.fields[spec['name']] = widget
-        widget.setTime(QTime(0,0,0))
+        widget.setTime(QtCore.QTime(0,0,0))
         widget.setCalendarPopup(True)
         label_text = spec.get('label', spec['name'])
-        self.layout.addWidget(QLabel(label_text))
+        self.layout.addWidget(
+            QtWidgets.QLabel(label_text)
+        )
         self.layout.addWidget(widget)
 
     def get_values(self):
-        QString2pyunicode = lambda qs: str(qs.toAscii()).decode('utf8')
+        def QString2pyunicode(qs):
+            if not isinstance(qs, str):
+                return str(qs.toAscii()).decode('utf8')
+            else:
+                return qs
         identity = lambda x: x
         values = {}
         for spec in self.field_specs:
@@ -250,7 +256,7 @@ class SimpleDialog(QDialog):
     def popup_dialog(field_spec):
         dialog = SimpleDialog(field_spec)
         result = dialog.exec_()
-        if result == QDialog.Accepted:
+        if result == QtWidgets.QDialog.Accepted:
             return dialog.get_values()
         else:
             return None
@@ -353,10 +359,10 @@ class MarkingsIO(PluginBase):
             )),
             all_markings,
         )
-        formatted_markings = map(
+        formatted_markings = list(map(
             lambda m: {f: m[f] for f in ('start', 'end', 'label', 'note')},
             markings
-        )
+        ))
         self.emit_new_markings(formatted_markings, metadata)
 
     def emit_new_markings(self, markings, metadata):

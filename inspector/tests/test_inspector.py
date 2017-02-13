@@ -2,23 +2,30 @@ from __future__ import print_function, division
 
 import sys
 
+from functools import wraps
+from unittest import TestCase
+from operator import attrgetter
+
 import numpy as np
 import pandas as pd
 
 # skeleton from http://johnnado.com/pyqt-qtest-example/
-from unittest import TestCase
-from PyQt4.QtGui import QApplication, QAbstractItemView
-from PyQt4.QtTest import QTest
-from PyQt4.QtCore import Qt
-from PyQt4 import QtCore
-from functools import wraps
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, is_pyqt5
+
+if is_pyqt5():
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtCore import Qt
+else:
+    from PyQt4.QtTest import QTest
+    from PyQt4.QtCore import Qt
+
 
 from inspector import Inspector
 from inspector.constants import Labels
 from inspector import plugins
-from operator import attrgetter
 
-app = QApplication([])
+
+app = QtWidgets.QApplication([])
 
 failure_ = False
 sys._excepthook = sys.excepthook
@@ -136,18 +143,18 @@ class TestInspector(TestCase):
             4
         )
         self.assertEqual(
-            map(attrgetter('start'), self.ins.model.items[0].markings),
+            list(map(attrgetter('start'), self.ins.model.items[0].markings)),
             [0, 4, 8, 12],
         )
         self.assertEqual(
-            map(attrgetter('end'), self.ins.model.items[0].markings),
+            list(map(attrgetter('end'), self.ins.model.items[0].markings)),
             [4, 8, 12, 16],
         )
 
     @check_slot_failure
     def test_move_interval(self):
         self.ins.load_series(self.df_timeseries)
-        self.ins.view.move_interval()
+        self.ins.view.move_interval('right')
         self.ins.view.move_interval(direction='left')
 
     @check_slot_failure
@@ -158,7 +165,7 @@ class TestInspector(TestCase):
     def test_remove_selected_list_items(self):
         self.ins.load_series(self.df_timeseries)
         self.ins.view.list_view.setSelectionMode(
-            QAbstractItemView.MultiSelection  # Required for selection in test
+            QtWidgets.QAbstractItemView.MultiSelection  # Required for selection in test
         )
         self.ins.view.list_view.selectRow(0)
         self.ins.view.list_view.selectRow(1)
@@ -170,3 +177,11 @@ class TestInspector(TestCase):
         self.ins.load_series(self.df_timeseries)
         self.ins.view.outline_view.display_maximal_interval()
 
+    @check_slot_failure
+    def test_set_label_action(self):
+        self.ins.view.actions['label_discard'].trigger()
+
+    @check_slot_failure
+    def test_move_actions(self):
+        self.ins.view.actions['move_left'].trigger()
+        self.ins.view.actions['move_right'].trigger()

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 import sys
 import os
@@ -11,15 +11,13 @@ import pandas as pd
 
 from datetime import datetime
 
-from PyQt4 import QtGui
-from PyQt4.QtGui import QApplication
-
-from model import Model
-from view import View
+from inspector.model import Model
+from inspector.view import View
 
 # import sip
 # sip.setapi('QVariant', 2)
 
+from matplotlib.backends.qt_compat import QtWidgets, QtGui, is_pyqt5
 
 
 # ==============================================================================
@@ -66,14 +64,15 @@ class Inspector(object):
             format="%(asctime)s %(levelname)-8s [%(name)s] : %(message)s"
         )
         logger.debug('Initializing Inspector ...')
+        logger.debug('Using pyqt5: %s', is_pyqt5())
         # Make sure that we use any pre-existing QApplication instance
         if interactive:
             shell = get_ipython_if_any()
             if shell and not shell._inputhook.__module__.endswith('.qt'):
                 shell.enable_gui('qt')
                 logger.info("Enabled 'qt' gui in current ipython shell")
-        app = QApplication.instance()
-        self.app = app or QApplication(sys.argv)
+        app = QtWidgets.QApplication.instance()
+        self.app = app or QtWidgets.QApplication(sys.argv)
         QtGui.qApp = self.app
 
         self.model = Model()
@@ -99,13 +98,13 @@ def example_series(datetimeindex=True):
         index=map(datetime.utcfromtimestamp, x) if datetimeindex else x,
         columns=[(1,'a_name','aserial'), (2,'b_name','bserial')]
     )
-    d.columns = map(str, d.columns)
+    d.columns = list(map(str, d.columns))
     return d
 
 
 def quicktest():
     inspector = Inspector()
-    for name, series in example_series(datetimeindex=False).iteritems():
+    for name, series in example_series(datetimeindex=False).items():
         inspector.load_series(series, name)
     return inspector
 
