@@ -34,7 +34,11 @@ def debug_decorator(fcn, msg):
     logger = logging.getLogger('dbug')
     def debug_logged(*args, **kwargs):
         logger.debug(msg)
-        return fcn(*args, **kwargs)
+        try:
+            return fcn(*args, **kwargs)
+        except Exception:
+            logger.debug('args: %s | kwargs: %s', args, kwargs)
+            raise
     return debug_logged
 
 
@@ -45,7 +49,13 @@ def create_action(text, parent, tip=None, shortcut=None, icon=None,
     if icon:
         action.setIcon(icon)
     if shortcut:
-        action.setShortcut(QtGui.QKeySequence(shortcut))
+        # TODO: A litle bit dirty, we save the QShort on the action object
+        action.short = QtWidgets.QShortcut(
+            QtGui.QKeySequence(shortcut),
+            parent,
+#             context=Qt.ApplicationShortcut
+        )
+        action.short.activated.connect(action.trigger)
     if tip:
         action.setStatusTip(tip)
     if add_to:
@@ -67,9 +77,10 @@ def create_action(text, parent, tip=None, shortcut=None, icon=None,
         # Slots must/should take no arguments
         for slot in slots:
             if is_pyqt5():
+                # NOTE: This seems to include a boolean value for "Checked"
+                #       sometimes. Very weird. 
                 action.triggered.connect(slot)
             else:
                 action.triggered[()].connect(slot)
-
 
     return action

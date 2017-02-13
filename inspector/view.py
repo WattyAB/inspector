@@ -280,7 +280,7 @@ class View(QtWidgets.QMainWindow):
     def setup_plugin_menus(self):
         self.plugin_menus = {}
         discover_plugins()
-        for name, class_ in all_plugins().items():
+        for name, class_ in sorted(all_plugins().items()):
             menu = self.menuBar().addMenu(name)
             self.actions['toggle_plugin_' + name] = create_action(
                 text='Enabled'.format(name),
@@ -294,8 +294,12 @@ class View(QtWidgets.QMainWindow):
     def setup_populate_help_list(self):
         def populate_from_menu(menu):
             for act in menu.actions():
+                if hasattr(act, 'short'):
+                    shortcut_text = act.short.key().toString()
+                else:
+                    shortcut_text = ''
                 text = '{:s}\t{:s}: {:s}'.format(
-                    act.shortcut().toString(),
+                    shortcut_text,
                     menu.title().replace('&',''),
                     act.text().replace('&',''),
                 )
@@ -441,7 +445,7 @@ class View(QtWidgets.QMainWindow):
         self.actions['move_right'] = create_view_action(
             'Move &right',
             shortcut=Qt.Key_Space,
-            connect=self.move_interval,
+            connect=lambda: self.move_interval('right'),
         )
         self.actions['remove_series'] = create_view_action(
             '&Remove series',
@@ -735,13 +739,15 @@ class View(QtWidgets.QMainWindow):
             logger.info('Loaded "{n}" ({v} values) from {src}'
                       ''.format(n=series.name, v=len(series), src=data_source))
 
-    def move_interval(self, direction='right'):
+    def move_interval(self, direction):
         xlim = self.detail_view.axes.get_xlim()
         diff = xlim[1] - xlim[0]
         if direction == 'left':
             new_lim = (xlim[0] - diff, xlim[0])
-        else:
+        elif direction == 'right':
             new_lim = (xlim[1], xlim[1] + diff)
+        else:
+            raise ValueError('urecognized move direction %s' %direction)
         self.outline_view.on_span_select(*new_lim)
 
     def selected_list_item_rows(self):

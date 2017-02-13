@@ -154,7 +154,7 @@ class TestInspector(TestCase):
     @check_slot_failure
     def test_move_interval(self):
         self.ins.load_series(self.df_timeseries)
-        self.ins.view.move_interval()
+        self.ins.view.move_interval('right')
         self.ins.view.move_interval(direction='left')
 
     @check_slot_failure
@@ -180,4 +180,8 @@ class TestInspector(TestCase):
     @check_slot_failure
     def test_set_label_action(self):
         self.ins.view.actions['label_discard'].trigger()
-    
+
+    @check_slot_failure
+    def test_move_actions(self):
+        self.ins.view.actions['move_left'].trigger()
+        self.ins.view.actions['move_right'].trigger()
