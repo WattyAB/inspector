@@ -1,4 +1,4 @@
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 import os
 import logging
@@ -91,10 +91,10 @@ def extract_integers(s):
     :return: list[int]
     """
     non_digits_replaced = [c if c.isdigit() else ' ' for c in s]
-    return map(
+    return list(map(
         int,
         ''.join(non_digits_replaced).split()
-    )
+    ))
 
 
 class PluginBase(QtCore.QObject):
@@ -231,7 +231,11 @@ class SimpleDialog(QtWidgets.QDialog):
         self.layout.addWidget(widget)
 
     def get_values(self):
-        QString2pyunicode = lambda qs: str(qs.toAscii()).decode('utf8')
+        def QString2pyunicode(qs):
+            if not isinstance(qs, str):
+                return str(qs.toAscii()).decode('utf8')
+            else:
+                return qs
         identity = lambda x: x
         values = {}
         for spec in self.field_specs:
@@ -355,10 +359,10 @@ class MarkingsIO(PluginBase):
             )),
             all_markings,
         )
-        formatted_markings = map(
+        formatted_markings = list(map(
             lambda m: {f: m[f] for f in ('start', 'end', 'label', 'note')},
             markings
-        )
+        ))
         self.emit_new_markings(formatted_markings, metadata)
 
     def emit_new_markings(self, markings, metadata):

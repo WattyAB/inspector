@@ -1,4 +1,4 @@
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 LINEWIDTH = 1.1
 DATA_ALPHA = 0.80
@@ -87,7 +87,7 @@ _NOT_FUNCTIONING = ['b', 'g', 'r', 'c', 'm', 'y', 'grey']
 # Plot command to visualize:
 #     plt.imshow(
 #         np.repeat(
-#             np.array([map(lambda c: QColor(c).getRgbF(), COLORS[:25])]),
+#             np.array([map(lambda c: QtGui.QColor(c).getRgbF(), COLORS[:25])]),
 #             25,
 #             axis=0
 #         ),

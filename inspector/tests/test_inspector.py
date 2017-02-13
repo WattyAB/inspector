@@ -143,11 +143,11 @@ class TestInspector(TestCase):
             4
         )
         self.assertEqual(
-            map(attrgetter('start'), self.ins.model.items[0].markings),
+            list(map(attrgetter('start'), self.ins.model.items[0].markings)),
             [0, 4, 8, 12],
         )
         self.assertEqual(
-            map(attrgetter('end'), self.ins.model.items[0].markings),
+            list(map(attrgetter('end'), self.ins.model.items[0].markings)),
             [4, 8, 12, 16],
         )
 
@@ -177,3 +177,7 @@ class TestInspector(TestCase):
         self.ins.load_series(self.df_timeseries)
         self.ins.view.outline_view.display_maximal_interval()
 
+    @check_slot_failure
+    def test_set_label_action(self):
+        self.ins.view.actions['label_discard'].trigger()
+    

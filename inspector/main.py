@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 import sys
 import os
@@ -17,7 +17,7 @@ from inspector.view import View
 # import sip
 # sip.setapi('QVariant', 2)
 
-from matplotlib.backends.qt_compat import QtWidgets, QtGui
+from matplotlib.backends.qt_compat import QtWidgets, QtGui, is_pyqt5
 
 
 # ==============================================================================
@@ -64,6 +64,7 @@ class Inspector(object):
             format="%(asctime)s %(levelname)-8s [%(name)s] : %(message)s"
         )
         logger.debug('Initializing Inspector ...')
+        logger.debug('Using pyqt5: %s', is_pyqt5())
         # Make sure that we use any pre-existing QApplication instance
         if interactive:
             shell = get_ipython_if_any()
@@ -97,7 +98,7 @@ def example_series(datetimeindex=True):
         index=map(datetime.utcfromtimestamp, x) if datetimeindex else x,
         columns=[(1,'a_name','aserial'), (2,'b_name','bserial')]
     )
-    d.columns = map(str, d.columns)
+    d.columns = list(map(str, d.columns))
     return d
 
 

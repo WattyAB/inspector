@@ -12,7 +12,7 @@ from matplotlib.dates import date2num, num2date, DateLocator
 from matplotlib.patches import Polygon
 
 from inspector.helpers import pyqtSignal
-from matplotlib.backends.qt_compat import QtWidgets, QtCore
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui
 
 from inspector.constants import (
     SPAN_ALPHA,
@@ -84,7 +84,7 @@ class SpanView(QtCore.QObject):
             return value
 
     def get_xlim(self):
-        return map(self.from_xaxis, self.axes.get_xlim())
+        return list(map(self.from_xaxis, self.axes.get_xlim()))
 
     def set_xlim(self, x0, x1):
         logger.debug('Setting xlim (%s)' %self)
@@ -96,6 +96,13 @@ class SpanView(QtCore.QObject):
 
     def item_changed(self, item):
         check_state = item.checkState()
+        try:
+            hash(item)
+        except TypeError:
+            # NOTE: Why we get non-DataItem items here has
+            #       not been investigated thoroughly
+            logger.debug('item_changed got non-hashable %s', item)
+            return
         line = self.item2line.get(item, None)
         if line and line.get_visible() != check_state:
             self.toggle_visible(item, check_state)
@@ -114,7 +121,7 @@ class SpanView(QtCore.QObject):
 
     def make_span(self, x0, x1, color, draw=True, alpha=SPAN_ALPHA):
         logger.debug('Creating span (%s)' %self)
-        x0_ordinal, x1_ordinal = map(self.to_xaxis, [x0, x1])
+        x0_ordinal, x1_ordinal = list(map(self.to_xaxis, [x0, x1]))
         span = self.axes.axvspan(
             x0_ordinal,
             x1_ordinal,
@@ -236,7 +243,7 @@ class OutlineView(SpanView):
             )
         )
         idx = self.items.index(item)
-        rgb_tuple = QtWidgets.QColor(COLORS[min(idx, len(COLORS))]).getRgbF()[:3]
+        rgb_tuple = QtGui.QColor(COLORS[min(idx, len(COLORS))]).getRgbF()[:3]
         series.plot(
             ax=self.axes,
             label=item.name,
@@ -308,7 +315,7 @@ class DetailView(SpanView):
         data_slice = item.series.loc[start:end]
         if data_slice.empty:
             data_slice = item.series.iloc[0:10]
-        rgb_tuple = QtWidgets.QColor(COLORS[min(idx, len(COLORS))]).getRgbF()[:3]
+        rgb_tuple = QtGui.QColor(COLORS[min(idx, len(COLORS))]).getRgbF()[:3]
         data_slice.plot(
             ax=self.axes,
             label=item.name,

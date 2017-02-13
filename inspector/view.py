@@ -1,4 +1,4 @@
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 # stdlib imports
 import os
@@ -68,7 +68,7 @@ def msgpack_lz4_to_series(data):
                          else pd.DatetimeIndex(d['index']),
         name=d['id']
     )
-    seria = map(series_load, content)
+    seria = list(map(series_load, content))
 
     return seria
 
@@ -184,6 +184,7 @@ class View(QtWidgets.QMainWindow):
         self.setGeometry(300, 300, 1224, 720)
 
         self.list_view = self.setup_list_view(self.model.item_model)
+        logger.debug('Set up done: List view')
 
         self.marking_label = self.setup_marking_label()
 
@@ -192,14 +193,14 @@ class View(QtWidgets.QMainWindow):
         self.canvas,
         self.mpl_toolbar,
         ) = self.setup_figure()
-
+        logger.debug('Set up done: Figure')
         (
         self.outline_view,
         self.detail_view,
         ) = self.setup_views(self.fig, self.model.items)
-
+        logger.debug('Set up done: Views')
         self.setup_connections()
-
+        logger.debug('Set up done: Connections')
         # Compose layout
         #
         # Left side
@@ -233,10 +234,10 @@ class View(QtWidgets.QMainWindow):
         self.frame_right.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.vbox_right = QtWidgets.QVBoxLayout()
         self.frame_right.setLayout(self.vbox_right)
-        map(
+        list(map(
             self.vbox_right.addWidget,
             [self.mpl_toolbar, self.canvas]
-        )
+        ))
 
         # Vertical splitter
         self.vsplit = QtWidgets.QSplitter(self.win)
@@ -262,6 +263,7 @@ class View(QtWidgets.QMainWindow):
         self.setup_menus_and_actions()
 
         self.setup_populate_help_list()
+
         self.statusBar().showMessage('Ready')
         self.show()
 
@@ -298,10 +300,8 @@ class View(QtWidgets.QMainWindow):
                     act.text().replace('&',''),
                 )
                 self.help_item_model.appendRow(QtGui.QStandardItem(text))
-        map(
-            populate_from_menu,
-            [self.file_menu, self.view_menu, self.label_menu]
-        )
+        for menu_ in [self.file_menu, self.view_menu, self.label_menu]:
+            populate_from_menu(menu_)
 
     def setup_marking_label(self):
         marking_label = QtWidgets.QLabel('Current label-mode: ?')
@@ -313,7 +313,8 @@ class View(QtWidgets.QMainWindow):
         return marking_label
 
     def set_marking_label(self, label):
-        color = QtWidgets.QColor(LABEL_COLOR_MAP.get(label, 'white'))
+        logging.debug('Setting marking label to %s %s', self, label)
+        color = QtGui.QColor(LABEL_COLOR_MAP.get(label, 'white'))
         color.setAlphaF(SPAN_ALPHA)
         self.marking_label.setStyleSheet(
             "background-color: rgba{};".format(tuple(color.getRgb()))
@@ -325,6 +326,7 @@ class View(QtWidgets.QMainWindow):
         self.setup_file_actions()
         self.setup_view_actions()
         self.setup_label_actions()
+        logger.debug('All actions set up')
 
     def setup_label_actions(self):
         key_label_mapping = {
@@ -341,11 +343,18 @@ class View(QtWidgets.QMainWindow):
         # Have to be careful so that the lambda get redefined each loop:
         # http://martinfitzpatrick.name/article/transmit-extra-data-with-signals-in-pyqt/
         for key, label in key_label_mapping.items():
+            logging.debug('Adding action for key -> label %s:%s', key, label)
+            if is_pyqt5():
+                # NOTE: The reason why the callback gets an extra arg (False)
+                #       in pyqt5 is not clear. Could perhaps be found in docs.
+                setter_callback = lambda _, lb=label: self.set_marking_label(lb)
+            else:
+                setter_callback = lambda lb=label: self.set_marking_label(lb)
             self.actions['label_'+label] = create_action(
                 '&'+label,
                 parent=self,
                 shortcut='Ctrl+'+key,
-                connect=lambda lbl=label: self.set_marking_label(lbl),
+                connect=setter_callback,
                 add_to=self.label_menu,
             )
 
@@ -581,10 +590,10 @@ class View(QtWidgets.QMainWindow):
                 raise Exception('expected {} to be disabled'.format(plugin_class))
             instance = plugin_class()
             if hasattr(instance, 'actions'):
-                map(
+                list(map(
                     self.plugin_menus[plugin_class.name].addAction,
                     instance.actions
-                )
+                ))
             self.plugins[plugin_class.name] = instance
 
             # Connect any plugin slots to known signals by name.
@@ -647,7 +656,12 @@ class View(QtWidgets.QMainWindow):
                     metadata=series_container.get('metadata', None)
                 )
             else:
-                for name, subcontainer in series_container.items():
+                # Check items/iteritems for py2/py3 compatibility
+                if hasattr(series_container, 'items'):
+                    items = series_container.items()
+                else:
+                    items =  series_container.iteritems()
+                for name, subcontainer in items:
                     self.load_seria(subcontainer, name)
 
         # tuple or list (call recursively)
@@ -695,10 +709,10 @@ class View(QtWidgets.QMainWindow):
             if isinstance(loaded, pd.Series):
                 seria = [loaded]
             elif isinstance(loaded, pd.DataFrame):
-                seria = map(
+                seria = list(map(
                     itemgetter(1),
                     loaded.iteritems()
-                )
+                ))
             elif isinstance(loaded, list):
                 seria = loaded
             else:
@@ -731,10 +745,10 @@ class View(QtWidgets.QMainWindow):
         self.outline_view.on_span_select(*new_lim)
 
     def selected_list_item_rows(self):
-        rows = map(
+        rows = list(map(
             methodcaller('row'),
             self.list_view.selectionModel().selectedIndexes()
-        )
+        ))
         # We can get duplicates when clicking the row or by using selectRow()
         return list(set(rows))
 

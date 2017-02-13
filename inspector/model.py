@@ -1,4 +1,4 @@
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 import logging
 logger = logging.getLogger('modl')
@@ -109,7 +109,7 @@ class Model(QtCore.QObject):
             return
 
 #       NOTE: Item color examples: http://ynonperek.com/q.t-mvc-customize-items
-        item_color = QtWidgets.QColor(COLORS[row_idx])
+        item_color = QtGui.QColor(COLORS[row_idx])
         item_color.setAlphaF(DATA_ALPHA)
 
         item = DataItem(series, name, metadata=metadata)
@@ -121,7 +121,7 @@ class Model(QtCore.QObject):
 
         colorpatch_item = QtGui.QStandardItem('')
         colorpatch_item.setData(
-            QtWidgets.QBrush(item_color),
+            QtGui.QBrush(item_color),
             Qt.BackgroundColorRole
         )
 
@@ -320,6 +320,10 @@ class DataItem(QtGui.QStandardItem):
         self.metadata = metadata or {}
         self.markings = []
         self.deleted_markings = []
+
+    def __hash__(self):
+        """QStandardItem is not hashable in python3"""
+        return id(self)
 
     def add_marking(self, marking):
         """
