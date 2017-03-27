@@ -68,9 +68,10 @@ class Inspector(object):
         # Make sure that we use any pre-existing QApplication instance
         if interactive:
             shell = get_ipython_if_any()
-            if shell and not shell._inputhook.__module__.endswith('.qt'):
-                shell.enable_gui('qt')
-                logger.info("Enabled 'qt' gui in current ipython shell")
+            if shell:
+                if not shell._inputhook or shell._inputhook.__module__.endswith('.qt'):
+                    shell.enable_gui('qt')
+                    logger.info("Enabled 'qt' gui in current ipython shell")
         app = QtWidgets.QApplication.instance()
         self.app = app or QtWidgets.QApplication(sys.argv)
         QtGui.qApp = self.app
